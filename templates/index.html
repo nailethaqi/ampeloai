@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="sq">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>AmpeloAI</title>
+
+    <link
+        rel="stylesheet"
+        href="/static/css/style.css?v=4"
+    >
+</head>
+
+<body>
+
+    <header class="navbar">
+
+        <div class="logo">
+            <i data-lucide="grape"></i>
+            <span>AmpeloAI</span>
+        </div>
+
+        <div class="navbar-actions">
+
+            <nav>
+
+                <a
+                    href="#home"
+                    data-i18n="nav.home"
+                >
+                    Ballina
+                </a>
+
+                <a
+                    href="#analysis"
+                    data-i18n="nav.analyze"
+                >
+                    Analizo
+                </a>
+
+                <a
+                    href="#history"
+                    data-i18n="nav.history"
+                >
+                    Historia
+                </a>
+
+                <a
+                    href="#statistics"
+                    data-i18n="nav.statistics"
+                >
+                    Statistikat
+                </a>
+
+                <a
+                    href="#about"
+                    data-i18n="nav.about"
+                >
+                    Rreth sistemit
+                </a>
+
+            </nav>
+
+            <div class="language-switch">
+
+                <button
+                    type="button"
+                    class="language-btn active"
+                    data-lang="sq"
+                >
+                    SQ
+                </button>
+
+                <span class="language-divider">
+                    |
+                </span>
+
+                <button
+                    type="button"
+                    class="language-btn"
+                    data-lang="en"
+                >
+                    EN
+                </button>
+
+            </div>
+
+        </div>
+
+    </header>
+
+    <main>
+
+        <section
+            class="hero"
+            id="home"
+        >
+
+            <div class="hero-content">
+
+                <span
+                    class="badge"
+                    data-i18n="hero.badge"
+                >
+                    Analizë e bimëve me Inteligjencë Artificiale
+                </span>
+
+                <h1 data-i18n="hero.title">
+                    Zbulimi i sëmundjeve të gjethes së rrushit
+                    me Inteligjencë Artificiale
+                </h1>
+
+                <p data-i18n="hero.description">
+                    Ngarkoni një imazh të gjethes së rrushit dhe
+                    sistemi me Inteligjencë Artificiale do të analizojë
+                    gjendjen e saj dhe do të identifikojë sëmundjet e mundshme.
+                </p>
+
+                <a
+                    href="#analysis"
+                    class="hero-button"
+                    data-i18n="hero.button"
+                >
+                    Analizo gjethen
+                </a>
+
+            </div>
+
+        </section>
+
+        <section
+            class="analysis-section"
+            id="analysis"
+        >
+
+            <div class="analysis-card">
+
+                <div class="section-title">
+
+                    <span>
+                        <i data-lucide="scan-search"></i>
+                    </span>
+
+                    <div>
+
+                        <h2 data-i18n="analysis.title">
+                            Analiza e gjethes së rrushit
+                        </h2>
+
+                        <p data-i18n="analysis.subtitle">
+                            Ngarkoni një imazh për të filluar analizën.
+                        </p>
+
+                    </div>
+
+                </div>
+
+                <div class="upload-note">
+
+                    <strong data-i18n="analysis.requirementsTitle">
+                        Kërkesat për imazhin:
+                    </strong>
+
+                    <span data-i18n="analysis.requirementsText">
+                        Për një analizë më të saktë, ngarkoni një fotografi
+                        të qartë dhe nga afër të një gjethjeje rrushi.
+                        Imazhet e frutave të rrushit, kërcellit, bimëve të
+                        tjera ose objekteve të palidhura nuk mbështeten.
+                    </span>
+
+                </div>
+
+                <div class="upload-area">
+
+                    <input
+                        type="file"
+                        id="imageInput"
+                        accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                        hidden
+                    >
+
+                    <label
+                        for="imageInput"
+                        class="upload-label"
+                    >
+
+                        <span class="upload-icon">
+                            <i data-lucide="image-up"></i>
+                        </span>
+
+                        <h3 data-i18n="analysis.uploadTitle">
+                            Ngarko imazhin e gjethes së rrushit
+                        </h3>
+
+                        <p data-i18n="analysis.uploadText">
+                            Klikoni këtu për të zgjedhur një imazh
+                        </p>
+
+                        <span
+                            class="file-types"
+                            data-i18n="analysis.fileTypes"
+                        >
+                            JPG, JPEG ose PNG
+                        </span>
+
+                    </label>
+
+                </div>
+
+                <div
+                    id="previewContainer"
+                    class="preview-container"
+                    hidden
+                >
+
+                    <h3 data-i18n="analysis.selectedImage">
+                        Imazhi i zgjedhur
+                    </h3>
+
+                    <img
+                        id="imagePreview"
+                        alt="Imazhi i zgjedhur i gjethes së rrushit"
+                    >
+
+                    <button
+                        id="analyzeButton"
+                        class="analyze-button"
+                        type="button"
+                        data-i18n="analysis.analyzeButton"
+                    >
+                        Analizo imazhin
+                    </button>
+
+                </div>
+
+                <div
+                    id="resultContainer"
+                    class="result-container"
+                    hidden
+                >
+
+                    <div class="result-header">
+
+                        <span class="result-icon">
+                            <i data-lucide="brain-circuit"></i>
+                        </span>
+
+                        <div>
+
+                            <p
+                                class="result-label"
+                                data-i18n="result.label"
+                            >
+                                Rezultati i analizës me AI
+                            </p>
+
+                            <h2 id="predictionName">
+                                -
+                            </h2>
+
+                        </div>
+
+                    </div>
+
+                    <div class="confidence-box">
+
+                        <div class="confidence-top">
+
+                            <span data-i18n="result.confidence">
+                                Besueshmëria
+                            </span>
+
+                            <strong id="confidenceValue">
+                                0%
+                            </strong>
+
+                        </div>
+
+                        <div class="confidence-track">
+
+                            <div
+                                id="confidenceBar"
+                                class="confidence-bar"
+                            ></div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="status-box">
+
+                        <span data-i18n="result.status">
+                            Statusi
+                        </span>
+
+                        <strong id="predictionStatus">
+                            -
+                        </strong>
+
+                    </div>
+
+                    <div class="recommendation-box">
+
+                        <h3 data-i18n="result.recommendation">
+                            Rekomandimi
+                        </h3>
+
+                        <p id="recommendationText"></p>
+
+                    </div>
+
+                    <div class="probabilities-section">
+
+                        <h3 data-i18n="result.probabilities">
+                            Probabilitetet e parashikimit
+                        </h3>
+
+                        <div id="probabilitiesList"></div>
+
+                    </div>
+
+                    <button
+                        id="newAnalysisButton"
+                        class="new-analysis-button"
+                        type="button"
+                        data-i18n="result.anotherImage"
+                    >
+                        Analizo një imazh tjetër
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <section
+            class="history-section"
+            id="history"
+        >
+
+            <div class="section-heading">
+
+                <span
+                    class="section-badge"
+                    data-i18n="history.badge"
+                >
+                    Regjistrimet e analizave
+                </span>
+
+                <h2 data-i18n="history.title">
+                    Analizat e fundit
+                </h2>
+
+                <p data-i18n="history.description">
+                    Shikoni analizat më të fundit të gjetheve të rrushit
+                    të realizuara nga sistemi AmpeloAI.
+                </p>
+
+            </div>
+
+            <div class="history-card">
+
+                <div class="history-header">
+
+                    <span data-i18n="history.result">
+                        Rezultati
+                    </span>
+
+                    <span data-i18n="history.confidence">
+                        Besueshmëria
+                    </span>
+
+                    <span data-i18n="history.date">
+                        Data
+                    </span>
+
+                </div>
+
+                <div id="historyList">
+
+                    <p
+                        class="empty-message"
+                        data-i18n="history.loading"
+                    >
+                        Duke ngarkuar analizat...
+                    </p>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <section
+            class="statistics-section"
+            id="statistics"
+        >
+
+            <div class="section-heading">
+
+                <span
+                    class="section-badge"
+                    data-i18n="statistics.badge"
+                >
+                    Statistikat e sistemit
+                </span>
+
+                <h2 data-i18n="statistics.title">
+                    Statistikat e analizave
+                </h2>
+
+                <p data-i18n="statistics.description">
+                    Përmbledhje e parashikimeve të realizuara
+                    nga sistemi AmpeloAI.
+                </p>
+
+            </div>
+
+            <div class="statistics-grid">
+
+                <div class="stat-card">
+
+                    <span class="stat-icon">
+                        <i data-lucide="scan-line"></i>
+                    </span>
+
+                    <p data-i18n="statistics.total">
+                        Gjithsej analiza
+                    </p>
+
+                    <h3 id="totalAnalyses">
+                        —
+                    </h3>
+
+                </div>
+
+                <div class="stat-card">
+
+                    <span class="stat-icon">
+                        <i data-lucide="circle-check-big"></i>
+                    </span>
+
+                    <p data-i18n="statistics.healthy">
+                        E shëndetshme
+                    </p>
+
+                    <h3 id="healthyCount">
+                        —
+                    </h3>
+
+                </div>
+
+                <div class="stat-card">
+
+                    <span class="stat-icon">
+                        <i data-lucide="shield-alert"></i>
+                    </span>
+
+                    <p data-i18n="statistics.blackRot">
+                        Kalbëzimi i zi
+                    </p>
+
+                    <h3 id="blackRotCount">
+                        —
+                    </h3>
+
+                </div>
+
+                <div class="stat-card">
+
+                    <span class="stat-icon">
+                        <i data-lucide="leaf"></i>
+                    </span>
+
+                    <p data-i18n="statistics.esca">
+                        Esca
+                    </p>
+
+                    <h3 id="escaCount">
+                        —
+                    </h3>
+
+                </div>
+
+                <div class="stat-card">
+
+                    <span class="stat-icon">
+                        <i data-lucide="triangle-alert"></i>
+                    </span>
+
+                    <p data-i18n="statistics.leafBlight">
+                        Djegia e gjethes
+                    </p>
+
+                    <h3 id="leafBlightCount">
+                        —
+                    </h3>
+
+                </div>
+
+            </div>
+
+            <div class="distribution-card">
+
+                <h3 data-i18n="statistics.distribution">
+                    Shpërndarja e parashikimeve
+                </h3>
+
+                <div class="distribution-item">
+
+                    <div class="distribution-info">
+
+                        <span data-i18n="statistics.blackRot">
+                            Kalbëzimi i zi
+                        </span>
+
+                        <strong id="blackRotPercent">
+                            0%
+                        </strong>
+
+                    </div>
+
+                    <div class="distribution-track">
+
+                        <div
+                            id="blackRotBar"
+                            class="distribution-bar"
+                        ></div>
+
+                    </div>
+
+                </div>
+
+                <div class="distribution-item">
+
+                    <div class="distribution-info">
+
+                        <span data-i18n="statistics.escaFull">
+                            Esca (njollat e zeza)
+                        </span>
+
+                        <strong id="escaPercent">
+                            0%
+                        </strong>
+
+                    </div>
+
+                    <div class="distribution-track">
+
+                        <div
+                            id="escaBar"
+                            class="distribution-bar"
+                        ></div>
+
+                    </div>
+
+                </div>
+
+                <div class="distribution-item">
+
+                    <div class="distribution-info">
+
+                        <span data-i18n="statistics.healthyLeaf">
+                            Gjethe e shëndetshme
+                        </span>
+
+                        <strong id="healthyPercent">
+                            0%
+                        </strong>
+
+                    </div>
+
+                    <div class="distribution-track">
+
+                        <div
+                            id="healthyBar"
+                            class="distribution-bar"
+                        ></div>
+
+                    </div>
+
+                </div>
+
+                <div class="distribution-item">
+
+                    <div class="distribution-info">
+
+                        <span data-i18n="statistics.leafBlight">
+                            Djegia e gjethes
+                        </span>
+
+                        <strong id="leafBlightPercent">
+                            0%
+                        </strong>
+
+                    </div>
+
+                    <div class="distribution-track">
+
+                        <div
+                            id="leafBlightBar"
+                            class="distribution-bar"
+                        ></div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <section
+            class="about-section"
+            id="about"
+        >
+
+            <h2 data-i18n="about.title">
+                Si funksionon AmpeloAI?
+            </h2>
+
+            <div class="steps">
+
+                <div class="step-card">
+
+                    <span>
+                        <i data-lucide="upload"></i>
+                    </span>
+
+                    <h3 data-i18n="about.step1Title">
+                        Ngarko
+                    </h3>
+
+                    <p data-i18n="about.step1Text">
+                        Ngarkoni një fotografi të qartë
+                        të një gjethjeje rrushi.
+                    </p>
+
+                </div>
+
+                <div class="step-card">
+
+                    <span>
+                        <i data-lucide="brain-circuit"></i>
+                    </span>
+
+                    <h3 data-i18n="about.step2Title">
+                        Analiza me AI
+                    </h3>
+
+                    <p data-i18n="about.step2Text">
+                        Modeli i Inteligjencës Artificiale
+                        analizon imazhin e ngarkuar.
+                    </p>
+
+                </div>
+
+                <div class="step-card">
+
+                    <span>
+                        <i data-lucide="file-check-2"></i>
+                    </span>
+
+                    <h3 data-i18n="about.step3Title">
+                        Rezultati
+                    </h3>
+
+                    <p data-i18n="about.step3Text">
+                        Shikoni gjendjen e parashikuar,
+                        nivelin e besueshmërisë dhe rekomandimin.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <footer>
+
+        <p data-i18n="footer.text">
+            © 2026 AmpeloAI. Të gjitha të drejtat e rezervuara.
+        </p>
+
+    </footer>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="/static/js/app.js?v=4"></script>
+
+</body>
+
+</html>
