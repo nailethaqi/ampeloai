@@ -32,6 +32,10 @@ const leafBlightBar = document.getElementById("leafBlightBar");
 
 const languageButtons = document.querySelectorAll(".language-btn");
 
+const HISTORY_STORAGE_KEY = "ampeloAIHistory";
+const LANGUAGE_STORAGE_KEY = "ampeloAILanguage";
+const MAX_HISTORY_ITEMS = 50;
+
 const translations = {
     sq: {
         pageTitle: "AmpeloAI - Analiza e Gjethes së Rrushit",
@@ -78,18 +82,18 @@ const translations = {
         history: {
             badge: "Regjistrimet e analizave",
             title: "Analizat e fundit",
-            description: "Shikoni analizat më të fundit të gjetheve të rrushit të realizuara nga sistemi AmpeloAI.",
+            description: "Shikoni analizat e fundit të realizuara në këtë pajisje me sistemin AmpeloAI.",
             result: "Rezultati",
             confidence: "Besueshmëria",
             date: "Data",
             loading: "Duke ngarkuar analizat...",
-            empty: "Ende nuk është regjistruar asnjë analizë."
+            empty: "Ende nuk është regjistruar asnjë analizë në këtë pajisje."
         },
 
         statistics: {
             badge: "Statistikat e sistemit",
             title: "Statistikat e analizave",
-            description: "Përmbledhje e parashikimeve të realizuara nga sistemi AmpeloAI.",
+            description: "Përmbledhje e analizave të realizuara në këtë pajisje me sistemin AmpeloAI.",
             total: "Gjithsej analiza",
             healthy: "E shëndetshme",
             blackRot: "Kalbëzimi i zi",
@@ -166,18 +170,18 @@ const translations = {
         history: {
             badge: "Analysis Records",
             title: "Recent Analyses",
-            description: "View the most recent grape leaf analyses performed by the AmpeloAI system.",
+            description: "View the most recent analyses performed on this device using the AmpeloAI system.",
             result: "Result",
             confidence: "Confidence",
             date: "Date",
             loading: "Loading analyses...",
-            empty: "No analyses have been recorded yet."
+            empty: "No analyses have been recorded on this device yet."
         },
 
         statistics: {
             badge: "System Statistics",
             title: "Analysis Statistics",
-            description: "Summary of the predictions performed by the AmpeloAI system.",
+            description: "Summary of the analyses performed on this device using the AmpeloAI system.",
             total: "Total Analyses",
             healthy: "Healthy",
             blackRot: "Black Rot",
@@ -268,12 +272,11 @@ const diseaseInformation = {
     }
 };
 
-const savedLanguage = localStorage.getItem("ampeloAILanguage");
+const savedLanguage = localStorage.getItem(LANGUAGE_STORAGE_KEY);
 
 let currentLanguage = savedLanguage === "en" ? "en" : "sq";
 let lastPrediction = null;
 let lastHistory = [];
-let lastStatistics = null;
 let isAnalyzing = false;
 
 function translate(key) {
@@ -294,11 +297,83 @@ function translate(key) {
     return value;
 }
 
+function getLocalHistory() {
+    try {
+        const storedHistory = localStorage.getItem(HISTORY_STORAGE_KEY);
+
+        if (!storedHistory) {
+            return [];
+        }
+
+        const parsedHistory = JSON.parse(storedHistory);
+
+        if (!Array.isArray(parsedHistory)) {
+            return [];
+        }
+
+        return parsedHistory.filter(item => {
+            return (
+                item &&
+                typeof item.predicted_class === "string" &&
+                item.created_at
+            );
+        });
+    } catch (error) {
+        console.error("Local history error:", error);
+        return [];
+    }
+}
+
+function saveLocalHistory(history) {
+    try {
+        localStorage.setItem(
+            HISTORY_STORAGE_KEY,
+            JSON.stringify(history)
+        );
+    } catch (error) {
+        console.error("Could not save local history:", error);
+    }
+}
+
+function createAnalysisId() {
+    if (
+        window.crypto &&
+        typeof window.crypto.randomUUID === "function"
+    ) {
+        return window.crypto.randomUUID();
+    }
+
+    return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function saveAnalysisLocally(prediction) {
+    const history = getLocalHistory();
+
+    const analysis = {
+        id: createAnalysisId(),
+        predicted_class: prediction.predicted_class,
+        confidence: Math.min(
+            Math.max(Number(prediction.confidence) || 0, 0),
+            100
+        ),
+        created_at: new Date().toISOString()
+    };
+
+    history.unshift(analysis);
+
+    const limitedHistory =
+        history.slice(0, MAX_HISTORY_ITEMS);
+
+    saveLocalHistory(limitedHistory);
+
+    refreshLocalHistoryAndStatistics();
+}
+
 function applyLanguage(language) {
     currentLanguage = language === "en" ? "en" : "sq";
 
     localStorage.setItem(
-        "ampeloAILanguage",
+        LANGUAGE_STORAGE_KEY,
         currentLanguage
     );
 
@@ -318,18 +393,18 @@ function applyLanguage(language) {
     });
 
     if (isAnalyzing) {
-        analyzeButton.textContent = translate("analysis.analyzing");
+        analyzeButton.textContent =
+            translate("analysis.analyzing");
     }
 
     if (lastPrediction) {
-        displayPrediction(lastPrediction, false);
+        displayPrediction(
+            lastPrediction,
+            false
+        );
     }
 
-    displayHistory(lastHistory);
-
-    if (lastStatistics) {
-        displayStatistics(lastStatistics);
-    }
+    refreshLocalHistoryAndStatistics();
 }
 
 languageButtons.forEach(button => {
@@ -351,7 +426,10 @@ imageInput.addEventListener("change", function () {
     ];
 
     if (!allowedTypes.includes(file.type)) {
-        alert(translate("alerts.invalidType"));
+        alert(
+            translate("alerts.invalidType")
+        );
+
         imageInput.value = "";
         return;
     }
@@ -375,22 +453,29 @@ analyzeButton.addEventListener("click", async function () {
     const file = imageInput.files[0];
 
     if (!file) {
-        alert(translate("alerts.selectImage"));
+        alert(
+            translate("alerts.selectImage")
+        );
+
         return;
     }
 
     isAnalyzing = true;
     analyzeButton.disabled = true;
-    analyzeButton.textContent = translate("analysis.analyzing");
+    analyzeButton.textContent =
+        translate("analysis.analyzing");
 
     const formData = new FormData();
     formData.append("file", file);
 
     try {
-        const response = await fetch("/api/predict", {
-            method: "POST",
-            body: formData
-        });
+        const response = await fetch(
+            "/api/predict",
+            {
+                method: "POST",
+                body: formData
+            }
+        );
 
         const data = await response.json();
 
@@ -401,31 +486,53 @@ analyzeButton.addEventListener("click", async function () {
             );
         }
 
+        if (
+            !data.prediction ||
+            !data.prediction.predicted_class
+        ) {
+            throw new Error(
+                "Invalid prediction response."
+            );
+        }
+
         lastPrediction = data.prediction;
 
-        displayPrediction(lastPrediction);
+        displayPrediction(
+            lastPrediction
+        );
 
-        await Promise.all([
-            loadHistory(),
-            loadStatistics()
-        ]);
+        saveAnalysisLocally(
+            lastPrediction
+        );
 
     } catch (error) {
-        console.error("Prediction error:", error);
+        console.error(
+            "Prediction error:",
+            error
+        );
 
         alert(
-            translate("alerts.analysisError")
+            translate(
+                "alerts.analysisError"
+            )
         );
 
     } finally {
         isAnalyzing = false;
         analyzeButton.disabled = false;
-        analyzeButton.textContent = translate("analysis.analyzeButton");
+        analyzeButton.textContent =
+            translate(
+                "analysis.analyzeButton"
+            );
     }
 });
 
-function displayPrediction(prediction, shouldScroll = true) {
-    const className = prediction.predicted_class;
+function displayPrediction(
+    prediction,
+    shouldScroll = true
+) {
+    const className =
+        prediction.predicted_class;
 
     const information =
         diseaseInformation[className]?.[currentLanguage] || null;
@@ -435,24 +542,34 @@ function displayPrediction(prediction, shouldScroll = true) {
             ? information.name
             : className;
 
-    const confidence = Number(prediction.confidence) || 0;
-    const safeConfidence = Math.min(Math.max(confidence, 0), 100);
+    const confidence =
+        Math.min(
+            Math.max(
+                Number(prediction.confidence) || 0,
+                0
+            ),
+            100
+        );
 
     confidenceValue.textContent =
-        `${safeConfidence.toFixed(2)}%`;
+        `${confidence.toFixed(2)}%`;
 
     confidenceBar.style.width =
-        `${safeConfidence}%`;
+        `${confidence}%`;
 
     predictionStatus.textContent =
         information
             ? information.status
-            : translate("result.analysisCompleted");
+            : translate(
+                "result.analysisCompleted"
+            );
 
     recommendationText.textContent =
         information
             ? information.recommendation
-            : translate("result.reviewResult");
+            : translate(
+                "result.reviewResult"
+            );
 
     predictionStatus.className =
         className === "Healthy"
@@ -481,7 +598,10 @@ function displayProbabilities(probabilities) {
 
             const probability =
                 Math.min(
-                    Math.max(Number(value) || 0, 0),
+                    Math.max(
+                        Number(value) || 0,
+                        0
+                    ),
                     100
                 );
 
@@ -545,24 +665,28 @@ function displayProbabilities(probabilities) {
     );
 }
 
-newAnalysisButton.addEventListener("click", function () {
-    imageInput.value = "";
-    imagePreview.src = "";
+newAnalysisButton.addEventListener(
+    "click",
+    function () {
 
-    previewContainer.hidden = true;
-    resultContainer.hidden = true;
+        imageInput.value = "";
+        imagePreview.src = "";
 
-    lastPrediction = null;
+        previewContainer.hidden = true;
+        resultContainer.hidden = true;
 
-    resetResultValues();
+        lastPrediction = null;
 
-    document
-        .getElementById("analysis")
-        .scrollIntoView({
-            behavior: "smooth",
-            block: "start"
-        });
-});
+        resetResultValues();
+
+        document
+            .getElementById("analysis")
+            .scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+    }
+);
 
 function resetResultValues() {
     predictionName.textContent = "-";
@@ -574,33 +698,16 @@ function resetResultValues() {
     probabilitiesList.innerHTML = "";
 }
 
-async function loadHistory() {
-    try {
-        const response =
-            await fetch("/api/history");
+function refreshLocalHistoryAndStatistics() {
+    lastHistory = getLocalHistory();
 
-        if (!response.ok) {
-            throw new Error(
-                "Failed to load history."
-            );
-        }
+    displayHistory(
+        lastHistory
+    );
 
-        const data =
-            await response.json();
-
-        lastHistory =
-            Array.isArray(data.history)
-                ? data.history
-                : [];
-
-        displayHistory(lastHistory);
-
-    } catch (error) {
-        console.error(
-            "History error:",
-            error
-        );
-    }
+    displayStatistics(
+        calculateStatistics(lastHistory)
+    );
 }
 
 function displayHistory(history) {
@@ -626,7 +733,7 @@ function displayHistory(history) {
         return;
     }
 
-    history.forEach(item => {
+    history.forEach((item, index) => {
         const row =
             document.createElement("div");
 
@@ -687,7 +794,7 @@ function displayHistory(history) {
             "history-number";
 
         number.textContent =
-            `#${item.id}`;
+            `#${history.length - index}`;
 
         const resultName =
             document.createElement("strong");
@@ -724,30 +831,29 @@ function displayHistory(history) {
     });
 }
 
-async function loadStatistics() {
-    try {
-        const response =
-            await fetch("/api/statistics");
+function calculateStatistics(history) {
+    const classes = {
+        Black_Rot: 0,
+        Esca: 0,
+        Healthy: 0,
+        Leaf_Blight: 0
+    };
 
-        if (!response.ok) {
-            throw new Error(
-                "Failed to load statistics."
-            );
+    history.forEach(item => {
+        if (
+            Object.prototype.hasOwnProperty.call(
+                classes,
+                item.predicted_class
+            )
+        ) {
+            classes[item.predicted_class] += 1;
         }
+    });
 
-        const data =
-            await response.json();
-
-        lastStatistics = data;
-
-        displayStatistics(data);
-
-    } catch (error) {
-        console.error(
-            "Statistics error:",
-            error
-        );
-    }
+    return {
+        total_analyses: history.length,
+        classes
+    };
 }
 
 function displayStatistics(data) {
@@ -827,9 +933,7 @@ function displayStatistics(data) {
 }
 
 applyLanguage(currentLanguage);
-
-loadHistory();
-loadStatistics();
+refreshLocalHistoryAndStatistics();
 
 if (window.lucide) {
     window.lucide.createIcons();
