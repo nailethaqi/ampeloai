@@ -27,6 +27,7 @@ CLASSES = {
     "Grape___Esca_(Black_Measles)": "Esca",
     "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)": "Leaf_Blight",
     "Grape___healthy": "Healthy",
+    "Other": "Other",
 }
 
 

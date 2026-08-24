@@ -1,2 +1,5 @@
-Test Accuracy: 97.87%
-Test Loss: 0.0653
+AMPELOAI TEST METRICS
+=====================
+
+Test Accuracy: 97.90%
+Test Loss: 0.0613

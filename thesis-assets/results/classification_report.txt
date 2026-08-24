@@ -1,16 +1,24 @@
-GRAPE LEAF DISEASE CLASSIFICATION REPORT
-========================================
+AMPELOAI IMAGE CLASSIFICATION REPORT
+====================================
 
-Test Accuracy: 97.87%
-Test Loss: 0.0653
+Classes:
+0: Black_Rot
+1: Esca
+2: Healthy
+3: Leaf_Blight
+4: Other
+
+Test Accuracy: 97.90%
+Test Loss: 0.0613
 
               precision    recall  f1-score   support
 
-   Black_Rot     0.9457    0.9831    0.9640       177
-        Esca     0.9851    0.9519    0.9682       208
-     Healthy     1.0000    1.0000    1.0000        64
- Leaf_Blight     1.0000    1.0000    1.0000       162
+   Black_Rot     0.9503    0.9718    0.9609       177
+        Esca     0.9756    0.9615    0.9685       208
+     Healthy     0.9846    1.0000    0.9922        64
+ Leaf_Blight     0.9938    0.9877    0.9907       162
+       Other     1.0000    0.9933    0.9967       150
 
-    accuracy                         0.9787       611
-   macro avg     0.9827    0.9837    0.9831       611
-weighted avg     0.9792    0.9787    0.9787       611
+    accuracy                         0.9790       761
+   macro avg     0.9809    0.9829    0.9818       761
+weighted avg     0.9792    0.9790    0.9790       761

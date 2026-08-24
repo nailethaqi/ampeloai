@@ -11,33 +11,19 @@ from fastapi import (
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 
 from ai.predict import predict_image
 
-from database import (
-    init_db,
-    save_analysis,
-    get_history,
-    get_statistics
-)
-
 
 app = FastAPI(
-    title="Smart Agriculture AI",
+    title="AmpeloAI",
     description=(
-        "Web system for AI-based grape leaf "
+        "AI-based web system for grape leaf "
         "disease image analysis"
     ),
-    version="1.0.0"
+    version="1.1.0"
 )
-
-
-
-
-init_db()
-
-
 
 
 app.mount(
@@ -47,13 +33,9 @@ app.mount(
 )
 
 
-
-
 templates = Jinja2Templates(
     directory="templates"
 )
-
-
 
 
 @app.get("/")
@@ -66,18 +48,21 @@ def home(request: Request):
     )
 
 
-
-
 @app.get("/api/status")
 def status():
 
     return {
         "status": "online",
-        "system": "Smart Agriculture AI",
-        "case_study": "Grape Leaf Disease Detection"
+        "system": "AmpeloAI",
+        "case_study": "Grape Leaf Disease Detection",
+        "supported_classes": [
+            "Black_Rot",
+            "Esca",
+            "Healthy",
+            "Leaf_Blight"
+        ],
+        "unsupported_class": "Other"
     }
-
-
 
 
 @app.post("/api/predict")
@@ -85,11 +70,11 @@ async def predict(
     file: UploadFile = File(...)
 ):
 
-    allowed_types = [
+    allowed_types = {
         "image/jpeg",
         "image/jpg",
         "image/png"
-    ]
+    }
 
     if file.content_type not in allowed_types:
 
@@ -101,34 +86,50 @@ async def predict(
             )
         )
 
+    contents = await file.read()
+
+    if not contents:
+
+        raise HTTPException(
+            status_code=400,
+            detail="The uploaded image is empty."
+        )
 
     try:
 
-        contents = await file.read()
-
-        image = Image.open(
+        with Image.open(
             BytesIO(contents)
+        ) as image:
+
+            image.load()
+
+            result = predict_image(
+                image
+            )
+
+    except UnidentifiedImageError:
+
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "The uploaded file is not "
+                "a valid image."
+            )
         )
 
-        result = predict_image(image)
+    except OSError:
 
-
-       
-        save_analysis(
-            predicted_class=result[
-                "predicted_class"
-            ],
-            confidence=result[
-                "confidence"
-            ]
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "The uploaded image could "
+                "not be processed."
+            )
         )
 
+    except HTTPException:
 
-        return {
-            "success": True,
-            "prediction": result
-        }
-
+        raise
 
     except Exception as error:
 
@@ -140,20 +141,7 @@ async def predict(
             )
         )
 
-
-
-
-@app.get("/api/history")
-def history():
-
     return {
-        "history": get_history()
+        "success": True,
+        "prediction": result
     }
-
-
-
-
-@app.get("/api/statistics")
-def statistics():
-
-    return get_statistics()

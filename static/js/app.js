@@ -12,6 +12,11 @@ const recommendationText = document.getElementById("recommendationText");
 const probabilitiesList = document.getElementById("probabilitiesList");
 const newAnalysisButton = document.getElementById("newAnalysisButton");
 
+const unsupportedWarning = document.getElementById("unsupportedWarning");
+const unsupportedNewImageButton = document.getElementById(
+    "unsupportedNewImageButton"
+);
+
 const historyList = document.getElementById("historyList");
 
 const totalAnalyses = document.getElementById("totalAnalyses");
@@ -77,6 +82,13 @@ const translations = {
             anotherImage: "Analizo një imazh tjetër",
             analysisCompleted: "Analiza u përfundua",
             reviewResult: "Rishikoni rezultatin e analizës."
+        },
+
+        unsupported: {
+            title: "Imazh i papërshtatshëm",
+            description: "Imazhi i ngarkuar nuk është identifikuar si gjethe rrushi. Ju lutem ngarkoni një fotografi të qartë dhe nga afër të një gjethjeje rrushi.",
+            button: "Zgjidh një imazh tjetër",
+            className: "Imazh i pambështetur"
         },
 
         history: {
@@ -165,6 +177,13 @@ const translations = {
             anotherImage: "Analyze Another Image",
             analysisCompleted: "Analysis Completed",
             reviewResult: "Review the analysis result."
+        },
+
+        unsupported: {
+            title: "Unsupported Image",
+            description: "The uploaded image was not identified as a grape leaf. Please upload a clear close-up image of a grape leaf.",
+            button: "Choose Another Image",
+            className: "Unsupported Image"
         },
 
         history: {
@@ -269,6 +288,16 @@ const diseaseInformation = {
             status: "Disease Detected",
             recommendation: "The image shows characteristics associated with Leaf Blight. Inspect surrounding leaves, maintain appropriate vineyard hygiene and consider guidance from an agricultural specialist."
         }
+    },
+
+    Other: {
+        sq: {
+            name: "Imazh i pambështetur"
+        },
+
+        en: {
+            name: "Unsupported Image"
+        }
     }
 };
 
@@ -315,6 +344,7 @@ function getLocalHistory() {
             return (
                 item &&
                 typeof item.predicted_class === "string" &&
+                item.predicted_class !== "Other" &&
                 item.created_at
             );
         });
@@ -347,13 +377,23 @@ function createAnalysisId() {
 }
 
 function saveAnalysisLocally(prediction) {
+    if (
+        prediction.predicted_class === "Other" ||
+        prediction.is_supported === false
+    ) {
+        return;
+    }
+
     const history = getLocalHistory();
 
     const analysis = {
         id: createAnalysisId(),
         predicted_class: prediction.predicted_class,
         confidence: Math.min(
-            Math.max(Number(prediction.confidence) || 0, 0),
+            Math.max(
+                Number(prediction.confidence) || 0,
+                0
+            ),
             100
         ),
         created_at: new Date().toISOString()
@@ -361,8 +401,10 @@ function saveAnalysisLocally(prediction) {
 
     history.unshift(analysis);
 
-    const limitedHistory =
-        history.slice(0, MAX_HISTORY_ITEMS);
+    const limitedHistory = history.slice(
+        0,
+        MAX_HISTORY_ITEMS
+    );
 
     saveLocalHistory(limitedHistory);
 
@@ -378,12 +420,19 @@ function applyLanguage(language) {
     );
 
     document.documentElement.lang = currentLanguage;
-    document.title = translations[currentLanguage].pageTitle;
 
-    document.querySelectorAll("[data-i18n]").forEach(element => {
-        const key = element.getAttribute("data-i18n");
-        element.textContent = translate(key);
-    });
+    document.title =
+        translations[currentLanguage].pageTitle;
+
+    document
+        .querySelectorAll("[data-i18n]")
+        .forEach(element => {
+            const key =
+                element.getAttribute("data-i18n");
+
+            element.textContent =
+                translate(key);
+        });
 
     languageButtons.forEach(button => {
         button.classList.toggle(
@@ -405,127 +454,207 @@ function applyLanguage(language) {
     }
 
     refreshLocalHistoryAndStatistics();
+
+    if (window.lucide) {
+        window.lucide.createIcons();
+    }
 }
 
 languageButtons.forEach(button => {
-    button.addEventListener("click", function () {
-        applyLanguage(this.dataset.lang);
-    });
-});
-
-imageInput.addEventListener("change", function () {
-    const file = this.files[0];
-
-    if (!file) {
-        return;
-    }
-
-    const allowedTypes = [
-        "image/jpeg",
-        "image/png"
-    ];
-
-    if (!allowedTypes.includes(file.type)) {
-        alert(
-            translate("alerts.invalidType")
-        );
-
-        imageInput.value = "";
-        return;
-    }
-
-    const reader = new FileReader();
-
-    reader.onload = function (event) {
-        imagePreview.src = event.target.result;
-        previewContainer.hidden = false;
-        resultContainer.hidden = true;
-
-        lastPrediction = null;
-
-        resetResultValues();
-    };
-
-    reader.readAsDataURL(file);
-});
-
-analyzeButton.addEventListener("click", async function () {
-    const file = imageInput.files[0];
-
-    if (!file) {
-        alert(
-            translate("alerts.selectImage")
-        );
-
-        return;
-    }
-
-    isAnalyzing = true;
-    analyzeButton.disabled = true;
-    analyzeButton.textContent =
-        translate("analysis.analyzing");
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-        const response = await fetch(
-            "/api/predict",
-            {
-                method: "POST",
-                body: formData
-            }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(
-                data.detail ||
-                "Image analysis failed."
+    button.addEventListener(
+        "click",
+        function () {
+            applyLanguage(
+                this.dataset.lang
             );
         }
+    );
+});
 
-        if (
-            !data.prediction ||
-            !data.prediction.predicted_class
-        ) {
-            throw new Error(
-                "Invalid prediction response."
-            );
+imageInput.addEventListener(
+    "change",
+    function () {
+        const file = this.files[0];
+
+        if (!file) {
+            return;
         }
 
-        lastPrediction = data.prediction;
+        const allowedTypes = [
+            "image/jpeg",
+            "image/png"
+        ];
 
-        displayPrediction(
-            lastPrediction
-        );
+        if (!allowedTypes.includes(file.type)) {
+            alert(
+                translate(
+                    "alerts.invalidType"
+                )
+            );
 
-        saveAnalysisLocally(
-            lastPrediction
-        );
+            imageInput.value = "";
+            return;
+        }
 
-    } catch (error) {
-        console.error(
-            "Prediction error:",
-            error
-        );
+        const reader =
+            new FileReader();
 
-        alert(
-            translate(
-                "alerts.analysisError"
-            )
-        );
+        reader.onload =
+            function (event) {
+                imagePreview.src =
+                    event.target.result;
 
-    } finally {
-        isAnalyzing = false;
-        analyzeButton.disabled = false;
+                previewContainer.hidden =
+                    false;
+
+                resultContainer.hidden =
+                    true;
+
+                unsupportedWarning.hidden =
+                    true;
+
+                lastPrediction = null;
+
+                resetResultValues();
+            };
+
+        reader.readAsDataURL(file);
+    }
+);
+
+analyzeButton.addEventListener(
+    "click",
+    async function () {
+        const file =
+            imageInput.files[0];
+
+        if (!file) {
+            alert(
+                translate(
+                    "alerts.selectImage"
+                )
+            );
+
+            return;
+        }
+
+        isAnalyzing = true;
+
+        analyzeButton.disabled = true;
+
         analyzeButton.textContent =
             translate(
-                "analysis.analyzeButton"
+                "analysis.analyzing"
             );
+
+        resultContainer.hidden = true;
+        unsupportedWarning.hidden = true;
+
+        const formData =
+            new FormData();
+
+        formData.append(
+            "file",
+            file
+        );
+
+        try {
+            const response =
+                await fetch(
+                    "/api/predict",
+                    {
+                        method: "POST",
+                        body: formData
+                    }
+                );
+
+            const data =
+                await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.detail ||
+                    "Image analysis failed."
+                );
+            }
+
+            if (
+                !data.prediction ||
+                !data.prediction.predicted_class
+            ) {
+                throw new Error(
+                    "Invalid prediction response."
+                );
+            }
+
+            const prediction =
+                data.prediction;
+
+            const unsupported =
+                prediction.predicted_class === "Other" ||
+                prediction.is_supported === false;
+
+            if (unsupported) {
+                lastPrediction = null;
+
+                showUnsupportedWarning();
+
+                return;
+            }
+
+            lastPrediction =
+                prediction;
+
+            displayPrediction(
+                prediction
+            );
+
+            saveAnalysisLocally(
+                prediction
+            );
+
+        } catch (error) {
+            console.error(
+                "Prediction error:",
+                error
+            );
+
+            alert(
+                translate(
+                    "alerts.analysisError"
+                )
+            );
+
+        } finally {
+            isAnalyzing = false;
+
+            analyzeButton.disabled =
+                false;
+
+            analyzeButton.textContent =
+                translate(
+                    "analysis.analyzeButton"
+                );
+        }
     }
-});
+);
+
+function showUnsupportedWarning() {
+    resultContainer.hidden = true;
+
+    unsupportedWarning.hidden = false;
+
+    resetResultValues();
+
+    if (window.lucide) {
+        window.lucide.createIcons();
+    }
+
+    unsupportedWarning.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+    });
+}
 
 function displayPrediction(
     prediction,
@@ -535,17 +664,20 @@ function displayPrediction(
         prediction.predicted_class;
 
     const information =
-        diseaseInformation[className]?.[currentLanguage] || null;
+        diseaseInformation[
+            className
+        ]?.[currentLanguage] || null;
 
     predictionName.textContent =
-        information
-            ? information.name
-            : className;
+        information?.name ||
+        className;
 
     const confidence =
         Math.min(
             Math.max(
-                Number(prediction.confidence) || 0,
+                Number(
+                    prediction.confidence
+                ) || 0,
                 0
             ),
             100
@@ -558,18 +690,16 @@ function displayPrediction(
         `${confidence}%`;
 
     predictionStatus.textContent =
-        information
-            ? information.status
-            : translate(
-                "result.analysisCompleted"
-            );
+        information?.status ||
+        translate(
+            "result.analysisCompleted"
+        );
 
     recommendationText.textContent =
-        information
-            ? information.recommendation
-            : translate(
-                "result.reviewResult"
-            );
+        information?.recommendation ||
+        translate(
+            "result.reviewResult"
+        );
 
     predictionStatus.className =
         className === "Healthy"
@@ -580,6 +710,7 @@ function displayPrediction(
         prediction.probabilities || {}
     );
 
+    unsupportedWarning.hidden = true;
     resultContainer.hidden = false;
 
     if (shouldScroll) {
@@ -590,12 +721,15 @@ function displayPrediction(
     }
 }
 
-function displayProbabilities(probabilities) {
+function displayProbabilities(
+    probabilities
+) {
     probabilitiesList.innerHTML = "";
 
-    Object.entries(probabilities).forEach(
+    Object.entries(
+        probabilities
+    ).forEach(
         ([className, value]) => {
-
             const probability =
                 Math.min(
                     Math.max(
@@ -606,48 +740,64 @@ function displayProbabilities(probabilities) {
                 );
 
             const information =
-                diseaseInformation[className]?.[currentLanguage] || null;
+                diseaseInformation[
+                    className
+                ]?.[currentLanguage] || null;
 
             const readableName =
-                information
-                    ? information.name
-                    : className;
+                information?.name ||
+                className;
 
             const item =
-                document.createElement("div");
+                document.createElement(
+                    "div"
+                );
 
             item.className =
                 "probability-item";
 
             const info =
-                document.createElement("div");
+                document.createElement(
+                    "div"
+                );
 
             info.className =
                 "probability-info";
 
             const name =
-                document.createElement("span");
+                document.createElement(
+                    "span"
+                );
 
             name.textContent =
                 readableName;
 
             const percentage =
-                document.createElement("strong");
+                document.createElement(
+                    "strong"
+                );
 
             percentage.textContent =
                 `${probability.toFixed(2)}%`;
 
             info.appendChild(name);
-            info.appendChild(percentage);
+
+            info.appendChild(
+                percentage
+            );
 
             const track =
-                document.createElement("div");
+                document.createElement(
+                    "div"
+                );
 
             track.className =
                 "probability-track";
 
             const bar =
-                document.createElement("div");
+                document.createElement(
+                    "div"
+                );
 
             bar.className =
                 "probability-bar";
@@ -658,34 +808,46 @@ function displayProbabilities(probabilities) {
             track.appendChild(bar);
 
             item.appendChild(info);
-            item.appendChild(track);
 
-            probabilitiesList.appendChild(item);
+            item.appendChild(
+                track
+            );
+
+            probabilitiesList.appendChild(
+                item
+            );
         }
     );
 }
 
+function resetAnalysis() {
+    imageInput.value = "";
+    imagePreview.src = "";
+
+    previewContainer.hidden = true;
+    resultContainer.hidden = true;
+    unsupportedWarning.hidden = true;
+
+    lastPrediction = null;
+
+    resetResultValues();
+
+    document
+        .getElementById("analysis")
+        .scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+}
+
 newAnalysisButton.addEventListener(
     "click",
-    function () {
+    resetAnalysis
+);
 
-        imageInput.value = "";
-        imagePreview.src = "";
-
-        previewContainer.hidden = true;
-        resultContainer.hidden = true;
-
-        lastPrediction = null;
-
-        resetResultValues();
-
-        document
-            .getElementById("analysis")
-            .scrollIntoView({
-                behavior: "smooth",
-                block: "start"
-            });
-    }
+unsupportedNewImageButton.addEventListener(
+    "click",
+    resetAnalysis
 );
 
 function resetResultValues() {
@@ -699,14 +861,17 @@ function resetResultValues() {
 }
 
 function refreshLocalHistoryAndStatistics() {
-    lastHistory = getLocalHistory();
+    lastHistory =
+        getLocalHistory();
 
     displayHistory(
         lastHistory
     );
 
     displayStatistics(
-        calculateStatistics(lastHistory)
+        calculateStatistics(
+            lastHistory
+        )
     );
 }
 
@@ -718,13 +883,17 @@ function displayHistory(history) {
         history.length === 0
     ) {
         const emptyMessage =
-            document.createElement("p");
+            document.createElement(
+                "p"
+            );
 
         emptyMessage.className =
             "empty-message";
 
         emptyMessage.textContent =
-            translate("history.empty");
+            translate(
+                "history.empty"
+            );
 
         historyList.appendChild(
             emptyMessage
@@ -733,102 +902,136 @@ function displayHistory(history) {
         return;
     }
 
-    history.forEach((item, index) => {
-        const row =
-            document.createElement("div");
-
-        row.className =
-            "history-row";
-
-        const information =
-            diseaseInformation[
-                item.predicted_class
-            ]?.[currentLanguage] || null;
-
-        const readableName =
-            information
-                ? information.name
-                : item.predicted_class;
-
-        const date =
-            new Date(item.created_at);
-
-        const locale =
-            currentLanguage === "sq"
-                ? "sq-AL"
-                : "en-GB";
-
-        const formattedDate =
-            Number.isNaN(date.getTime())
-                ? "-"
-                : date.toLocaleString(
-                    locale,
-                    {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit"
-                    }
+    history.forEach(
+        (item, index) => {
+            const row =
+                document.createElement(
+                    "div"
                 );
 
-        const confidence =
-            Math.min(
-                Math.max(
-                    Number(item.confidence) || 0,
-                    0
-                ),
-                100
+            row.className =
+                "history-row";
+
+            const information =
+                diseaseInformation[
+                    item.predicted_class
+                ]?.[currentLanguage] || null;
+
+            const readableName =
+                information?.name ||
+                item.predicted_class;
+
+            const date =
+                new Date(
+                    item.created_at
+                );
+
+            const locale =
+                currentLanguage === "sq"
+                    ? "sq-AL"
+                    : "en-GB";
+
+            const formattedDate =
+                Number.isNaN(
+                    date.getTime()
+                )
+                    ? "-"
+                    : date.toLocaleString(
+                        locale,
+                        {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit"
+                        }
+                    );
+
+            const confidence =
+                Math.min(
+                    Math.max(
+                        Number(
+                            item.confidence
+                        ) || 0,
+                        0
+                    ),
+                    100
+                );
+
+            const result =
+                document.createElement(
+                    "div"
+                );
+
+            result.className =
+                "history-result";
+
+            const number =
+                document.createElement(
+                    "span"
+                );
+
+            number.className =
+                "history-number";
+
+            number.textContent =
+                `#${history.length - index}`;
+
+            const resultName =
+                document.createElement(
+                    "strong"
+                );
+
+            resultName.textContent =
+                readableName;
+
+            result.appendChild(
+                number
             );
 
-        const result =
-            document.createElement("div");
+            result.appendChild(
+                resultName
+            );
 
-        result.className =
-            "history-result";
+            const confidenceElement =
+                document.createElement(
+                    "div"
+                );
 
-        const number =
-            document.createElement("span");
+            confidenceElement.className =
+                "history-confidence";
 
-        number.className =
-            "history-number";
+            confidenceElement.textContent =
+                `${confidence.toFixed(2)}%`;
 
-        number.textContent =
-            `#${history.length - index}`;
+            const dateElement =
+                document.createElement(
+                    "div"
+                );
 
-        const resultName =
-            document.createElement("strong");
+            dateElement.className =
+                "history-date";
 
-        resultName.textContent =
-            readableName;
+            dateElement.textContent =
+                formattedDate;
 
-        result.appendChild(number);
-        result.appendChild(resultName);
+            row.appendChild(
+                result
+            );
 
-        const confidenceElement =
-            document.createElement("div");
+            row.appendChild(
+                confidenceElement
+            );
 
-        confidenceElement.className =
-            "history-confidence";
+            row.appendChild(
+                dateElement
+            );
 
-        confidenceElement.textContent =
-            `${confidence.toFixed(2)}%`;
-
-        const dateElement =
-            document.createElement("div");
-
-        dateElement.className =
-            "history-date";
-
-        dateElement.textContent =
-            formattedDate;
-
-        row.appendChild(result);
-        row.appendChild(confidenceElement);
-        row.appendChild(dateElement);
-
-        historyList.appendChild(row);
-    });
+            historyList.appendChild(
+                row
+            );
+        }
+    );
 }
 
 function calculateStatistics(history) {
@@ -846,66 +1049,103 @@ function calculateStatistics(history) {
                 item.predicted_class
             )
         ) {
-            classes[item.predicted_class] += 1;
+            classes[
+                item.predicted_class
+            ] += 1;
         }
     });
 
     return {
-        total_analyses: history.length,
+        total_analyses:
+            Object.values(classes)
+                .reduce(
+                    (sum, count) =>
+                        sum + count,
+                    0
+                ),
         classes
     };
 }
 
 function displayStatistics(data) {
     const total =
-        Number(data?.total_analyses) || 0;
+        Number(
+            data?.total_analyses
+        ) || 0;
 
     const classes =
         data?.classes || {};
 
     const blackRot =
-        Number(classes.Black_Rot) || 0;
+        Number(
+            classes.Black_Rot
+        ) || 0;
 
     const esca =
-        Number(classes.Esca) || 0;
+        Number(
+            classes.Esca
+        ) || 0;
 
     const healthy =
-        Number(classes.Healthy) || 0;
+        Number(
+            classes.Healthy
+        ) || 0;
 
     const leafBlight =
-        Number(classes.Leaf_Blight) || 0;
+        Number(
+            classes.Leaf_Blight
+        ) || 0;
 
-    totalAnalyses.textContent = total;
-    healthyCount.textContent = healthy;
-    blackRotCount.textContent = blackRot;
-    escaCount.textContent = esca;
-    leafBlightCount.textContent = leafBlight;
+    totalAnalyses.textContent =
+        total;
 
-    const calculatePercentage = value => {
-        if (total <= 0) {
-            return 0;
-        }
+    healthyCount.textContent =
+        healthy;
 
-        return Math.min(
-            Math.max(
-                (value / total) * 100,
-                0
-            ),
-            100
-        );
-    };
+    blackRotCount.textContent =
+        blackRot;
+
+    escaCount.textContent =
+        esca;
+
+    leafBlightCount.textContent =
+        leafBlight;
+
+    const calculatePercentage =
+        value => {
+            if (total <= 0) {
+                return 0;
+            }
+
+            return Math.min(
+                Math.max(
+                    (value / total) *
+                        100,
+                    0
+                ),
+                100
+            );
+        };
 
     const blackRotPercentage =
-        calculatePercentage(blackRot);
+        calculatePercentage(
+            blackRot
+        );
 
     const escaPercentage =
-        calculatePercentage(esca);
+        calculatePercentage(
+            esca
+        );
 
     const healthyPercentage =
-        calculatePercentage(healthy);
+        calculatePercentage(
+            healthy
+        );
 
     const leafBlightPercentage =
-        calculatePercentage(leafBlight);
+        calculatePercentage(
+            leafBlight
+        );
 
     blackRotPercent.textContent =
         `${blackRotPercentage.toFixed(1)}%`;

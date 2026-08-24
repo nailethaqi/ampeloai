@@ -12,9 +12,9 @@
     <title>AmpeloAI</title>
 
     <link
-        rel="stylesheet"
-        href="/static/css/style.css?v=4"
-    >
+    rel="stylesheet"
+    href="/static/css/style.css?v=5"
+>
 </head>
 
 <body>
@@ -225,7 +225,7 @@
 
                     <img
                         id="imagePreview"
-                        alt="Imazhi i zgjedhur i gjethes së rrushit"
+                        alt="Imazhi i zgjedhur"
                     >
 
                     <button
@@ -236,6 +236,42 @@
                     >
                         Analizo imazhin
                     </button>
+
+                </div>
+
+                <div
+                    id="unsupportedWarning"
+                    class="unsupported-warning"
+                    hidden
+                >
+
+                    <div class="unsupported-warning-icon">
+                        <i data-lucide="triangle-alert"></i>
+                    </div>
+
+                    <div class="unsupported-warning-content">
+
+                        <h3 data-i18n="unsupported.title">
+                            Imazh i papërshtatshëm
+                        </h3>
+
+                        <p data-i18n="unsupported.description">
+                            Imazhi i ngarkuar nuk është identifikuar
+                            si gjethe rrushi. Ju lutem ngarkoni një
+                            fotografi të qartë dhe nga afër të një
+                            gjethjeje rrushi.
+                        </p>
+
+                        <button
+                            id="unsupportedNewImageButton"
+                            class="new-analysis-button"
+                            type="button"
+                            data-i18n="unsupported.button"
+                        >
+                            Zgjidh një imazh tjetër
+                        </button>
+
+                    </div>
 
                 </div>
 
@@ -359,8 +395,8 @@
                 </h2>
 
                 <p data-i18n="history.description">
-                    Shikoni analizat më të fundit të gjetheve të rrushit
-                    të realizuara nga sistemi AmpeloAI.
+                    Shikoni analizat e fundit të realizuara
+                    në këtë pajisje me sistemin AmpeloAI.
                 </p>
 
             </div>
@@ -417,8 +453,8 @@
                 </h2>
 
                 <p data-i18n="statistics.description">
-                    Përmbledhje e parashikimeve të realizuara
-                    nga sistemi AmpeloAI.
+                    Përmbledhje e analizave të realizuara
+                    në këtë pajisje me sistemin AmpeloAI.
                 </p>
 
             </div>
@@ -639,8 +675,8 @@
                     </h3>
 
                     <p data-i18n="about.step1Text">
-                        Ngarkoni një fotografi të qartë
-                        të një gjethjeje rrushi.
+                        Ngarkoni një fotografi të qartë dhe
+                        nga afër të një gjethjeje rrushi.
                     </p>
 
                 </div>
@@ -657,7 +693,8 @@
 
                     <p data-i18n="about.step2Text">
                         Modeli i Inteligjencës Artificiale
-                        analizon imazhin e ngarkuar.
+                        analizon karakteristikat vizuale
+                        të imazhit të ngarkuar.
                     </p>
 
                 </div>
@@ -674,7 +711,8 @@
 
                     <p data-i18n="about.step3Text">
                         Shikoni gjendjen e parashikuar,
-                        nivelin e besueshmërisë dhe rekomandimin.
+                        nivelin e besueshmërisë dhe
+                        rekomandimin përkatës.
                     </p>
 
                 </div>
@@ -694,7 +732,7 @@
     </footer>
 
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="/static/js/app.js?v=5"></script>
+    <script src="/static/js/app.js?v=6"></script>
 
 </body>
 
